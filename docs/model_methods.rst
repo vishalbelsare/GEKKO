@@ -672,6 +672,86 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
         and 2-D z data of size (x.size,y.size). GEKKO variables x, y and z are 
         linked with function z=f(x,y) where the function f is a bspline.
 
+.. py:classmethod:: c = covariance(x,y=None,ddof=1,name=None)
+
+    Covariance (scalar or matrix) built with GEKKO equations.
+
+    The covariance between two vectors is::
+
+        cov(x,y) = sum_{i=1..N} (x_i - mean(x)) (y_i - mean(y)) / (N - ddof)
+
+    Usage::
+
+        c = m.covariance(x, y, ddof=1)     # sample covariance (default)
+        c = m.covariance(x, y, ddof=0)     # population covariance
+
+        C = m.covariance(X, ddof=1)        # covariance matrix from list of vectors
+                                          # X = [x1, x2, ..., xp]
+
+    Inputs:
+        x:
+            1D vector (list/tuple/np.ndarray) if y is provided, or a 2D collection
+            of vectors (list of vectors or 2D ndarray) if y is None.
+
+        y:
+            Optional 1D vector, same length as x when x is 1D.
+
+        ddof:
+            Delta degrees of freedom. Use ddof=0 for population covariance or ddof=1
+            for sample covariance. Must satisfy 0 <= ddof < N.
+
+        name:
+            Optional base name for output variable(s). For covariance matrices, entries
+            are named like name_i_j.
+
+    Output:
+        If y is provided:
+            GEKKO variable c (scalar covariance)
+
+        If y is None and x is a list of vectors:
+            Covariance matrix C as a list-of-lists of GEKKO variables
+
+    Example usage (scalar covariance)::
+
+        import numpy as np
+        from gekko import GEKKO
+
+        m = GEKKO(remote=False)
+
+        xi = [2.1,2.5,3.6,4.0]
+        yi = [8,10,12,14]
+
+        x = [m.Param(value=v) for v in xi]
+        y = [m.Param(value=v) for v in yi]
+
+        c_pop  = m.covariance(x, y, ddof=0, name='cov_pop')
+        c_samp = m.covariance(x, y, ddof=1, name='cov_samp')
+
+        m.solve(disp=False)
+
+        print('population cov:', c_pop.value[0])
+        print('sample cov:', c_samp.value[0])
+
+    Example usage (covariance matrix)::
+
+        import numpy as np
+        from gekko import GEKKO
+
+        m = GEKKO(remote=False)
+
+        r1 = [0.01, 0.02, -0.01, 0.03]
+        r2 = [0.00, 0.01,  0.02, 0.01]
+        r3 = [0.02, 0.00,  0.01, 0.00]
+
+        X = [[m.Param(value=v) for v in r] for r in [r1, r2, r3]]
+
+        C = m.covariance(X, ddof=1, name='C')
+
+        m.solve(disp=False)
+
+        # C is a 3x3 list-of-lists of GEKKO Vars
+        print(C[0][0].value[0], C[0][1].value[0], C[0][2].value[0])
+
 .. py:classmethod:: cspline(x,y,x_data,y_data,bound_x=False)
 
 	Generate a 1d cubic spline with continuous first and seconds derivatives
