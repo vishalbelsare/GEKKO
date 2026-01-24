@@ -3,8 +3,8 @@ All notable changes to the GEKKO project are documented in this file.
 
 ## [Unreleased]
 ### Added
-- Added `covariance()` function to GEKKO for scalar and matrix covariance calculations
-- The `covariance()` function uses native GEKKO equations with input validation
+- Added covariance `cov()` function to GEKKO for scalar and matrix covariance calculations
+- The `cov()` function uses native GEKKO equations with input validation
 ### Changed
 
 ## [v1.3.2]
@@ -329,6 +329,7 @@ All notable changes to the GEKKO project are documented in this file.
 [0.1b2]: https://github.com/BYU-PRISM/GEKKO/compare/0.1b1...0.1b2
 [0.1b1]: https://github.com/BYU-PRISM/GEKKO/compare/v0.1a2...0.1b1
 [0.1a2]: https://github.com/BYU-PRISM/GEKKO/compare/0.0.4...v0.1a2
+
 
 
 
