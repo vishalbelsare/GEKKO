@@ -729,8 +729,15 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
 
         m.solve(disp=False)
 
+        print('Gekko Solution')
         print('population cov:', c_pop.value[0])
         print('sample cov:', c_samp.value[0])
+
+        print('Numpy Solution')
+        c_pop_np  = np.cov(xi, yi, ddof=0)[0,1]
+        c_samp_np = np.cov(xi, yi, ddof=1)[0,1]
+        print('population cov:', c_pop_np)
+        print('sample cov:', c_samp_np)
 
     Example usage (covariance matrix)::
 
@@ -739,18 +746,26 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
 
         m = GEKKO(remote=False)
 
-        r1 = [0.01, 0.02, -0.01, 0.03]
-        r2 = [0.00, 0.01,  0.02, 0.01]
-        r3 = [0.02, 0.00,  0.01, 0.00]
+        Xv = [[0.01, 0.02, -0.01, 0.03],
+              [0.00, 0.01,  0.02, 0.01],
+              [0.02, 0.00,  0.01, 0.00]]
 
-        X = [[m.Param(value=v) for v in r] for r in [r1, r2, r3]]
+        X = m.Array(m.Param,(3,4))
+        for i in range(3):
+            for j in range(4):
+                X[i][j].value = Xv[i][j]
 
         C = m.cov(X, ddof=1, name='C')
 
         m.solve(disp=False)
 
         # C is a 3x3 list-of-lists of GEKKO Vars
-        print(C[0][0].value[0], C[0][1].value[0], C[0][2].value[0])
+        print('Gekko Solution')
+        for i in range(3):
+            print(C[i][0:])
+
+        print('Numpy Solution')
+        print(np.cov(Xv))
 
 .. py:classmethod:: cspline(x,y,x_data,y_data,bound_x=False)
 
