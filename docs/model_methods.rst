@@ -678,14 +678,14 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
 
     The covariance between two vectors is::
 
-        cov(x,y) = sum_{i=1..N} (x_i - mean(x)) (y_i - mean(y)) / (N - ddof)
+        cov(x,y) = sum_{i=1..N} (x_i - mean(x)) (y_i - mean(y))/(N - ddof)
 
     Usage::
 
-        c = m.covariance(x, y, ddof=1)  # sample covariance (default)
-        c = m.covariance(x, y, ddof=0)  # population covariance
+        c = m.cov(x, y, ddof=1)  # sample covariance (default)
+        c = m.cov(x, y, ddof=0)  # population covariance
 
-        C = m.covariance(X, ddof=1)     # covariance matrix from list of vectors
+        C = m.cov(X, ddof=1)     # covariance matrix from list of vectors
                                         # X = [x1, x2, ..., xp]
 
     Inputs:
