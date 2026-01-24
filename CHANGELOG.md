@@ -5,6 +5,7 @@ All notable changes to the GEKKO project are documented in this file.
 ### Added
 - Added covariance `cov()` function to GEKKO for scalar and matrix covariance calculations
 - Updated `cov()` function to use native GEKKO equations with input validation
+- Warning with Mixed Integer parameters or variables and not using APOPT (MINLP) solver
 ### Changed
 - Catch `+Inf`, `-Inf`, and `Inf` in the results.json file. Replace with `NaN`.
 
@@ -330,6 +331,7 @@ All notable changes to the GEKKO project are documented in this file.
 [0.1b2]: https://github.com/BYU-PRISM/GEKKO/compare/0.1b1...0.1b2
 [0.1b1]: https://github.com/BYU-PRISM/GEKKO/compare/v0.1a2...0.1b1
 [0.1a2]: https://github.com/BYU-PRISM/GEKKO/compare/0.0.4...v0.1a2
+
 
 
 
