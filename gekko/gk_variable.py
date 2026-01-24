@@ -34,9 +34,8 @@ class GKVariable(GK_Operators):
         if name == '':
             name = 'v' + GKVariable.counter
             GKVariable.counter += 1
-            if integer == True:
-                name = 'int_'+name
-        
+        if integer == True:
+            name = 'int_'+name
         
         # prevents the __setattr__ function from sending options to the server
         # until the __init__ function has completed since they should only be
@@ -46,9 +45,10 @@ class GKVariable(GK_Operators):
         GK_Operators.__init__(self, name, value=value)
 
         #self.VALUE = value #initialized value is done in GK_Operators
+
         if not hasattr(self,'type'): #don't overwrite SV and CV
             self.type = None 
-            
+        
         if lb is not None:
             self.LOWER = lb
         else:
@@ -57,7 +57,8 @@ class GKVariable(GK_Operators):
             self.UPPER = ub
         else:
             self.UPPER = None
-        
+        self.integer = bool(integer)
+
         #register fixed values through connections to ensure consistency in the 
         #csv file, otherwise the requested fixed value will be overridden by
         #whatever initialization value is in the csv

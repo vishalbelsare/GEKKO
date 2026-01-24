@@ -33,9 +33,9 @@ class GKParameter(GK_Operators):
         if name == '':
             name = 'p' + GKParameter.counter
             GKParameter.counter += 1
-            if integer == True:
-                name = 'int_' + name
-                
+        if integer == True:
+            name = 'int_' + name
+
         # prevents the __setattr__ function from sending options to the server
         # until the __init__ function has completed since they should only be
         # sent if changed from their defaults
@@ -63,6 +63,7 @@ class GKParameter(GK_Operators):
             self.UPPER = ub
         else:
             self.UPPER = None
+        self.integer = bool(integer)
         
         # now allow options to be sent to the server
         self._initialized = True
@@ -173,11 +174,6 @@ class GK_FV(GKParameter):
         f.write(str(measurement))
         #close tag file
         f.close()
-        
-        
-        
-
-
 
 class GK_MV(GK_FV):
     """ Manipulated Variable. Inherits GK_FV."""
@@ -206,7 +202,6 @@ class GK_MV(GK_FV):
         self.PRED = None
         self.REQONCTRL = None
         self.TIER = None
-        
         
         GK_FV.__init__(self, name=name, value=value, lb=lb, ub=ub, gk_model=gk_model, model_path=model_path, integer=integer)
 

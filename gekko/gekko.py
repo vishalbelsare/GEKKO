@@ -166,10 +166,8 @@ class GEKKO(object):
             name = re.sub(r'\W+', '_', name).lower()
         else:
             name = 'v' + str(len(self._variables) + 1)
-        if integer == True:
-            name = 'int_'+name
 
-        variable = GKVariable(name, value, lb, ub)
+        variable = GKVariable(name, value, lb, ub, integer)
         self._variables.append(variable)
         if fixed_initial is False:
             self.Connection(variable,'calculated',pos1=1,node1=1)
@@ -2136,6 +2134,21 @@ class GEKKO(object):
         """
         if 'remote' in kwargs:
             raise TypeError('"remote" argument has been moved to model initialization (GEKKO(remote=True))')
+        
+        # check for integer variables or parameters and issue warning if not APOPT solver      
+        has_integer = any(
+            getattr(v, 'integer', False)
+            for v in (self._variables + self._parameters)
+        )
+        if has_integer:
+            solver = self.options.SOLVER
+            supports_mip = (solver == 1)   
+            if not supports_mip:
+                print("WARNING: Integer variables detected, but the selected solver "
+                      f"(SOLVER={solver})\n"
+                      "         does not support mixed-integer optimization.\n"
+                      "         Integer constraints will be relaxed.\n"
+                      "         Use m.options.SOLVER = 1 (APOPT) for integer enforcement.")
 
         # allow solver options to be submitted as dictionary
         if isinstance(self.solver_options, dict):
