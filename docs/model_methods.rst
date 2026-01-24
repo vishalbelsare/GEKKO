@@ -672,7 +672,7 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
         and 2-D z data of size (x.size,y.size). GEKKO variables x, y and z are 
         linked with function z=f(x,y) where the function f is a bspline.
 
-.. py:classmethod:: c = covariance(x,y=None,ddof=1,name=None)
+.. py:classmethod:: c = cov(x,y=None,ddof=1,name=None)
 
     Covariance (scalar or matrix) built with GEKKO equations.
 
@@ -682,11 +682,11 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
 
     Usage::
 
-        c = m.covariance(x, y, ddof=1)     # sample covariance (default)
-        c = m.covariance(x, y, ddof=0)     # population covariance
+        c = m.covariance(x, y, ddof=1)  # sample covariance (default)
+        c = m.covariance(x, y, ddof=0)  # population covariance
 
-        C = m.covariance(X, ddof=1)        # covariance matrix from list of vectors
-                                          # X = [x1, x2, ..., xp]
+        C = m.covariance(X, ddof=1)     # covariance matrix from list of vectors
+                                        # X = [x1, x2, ..., xp]
 
     Inputs:
         x:
@@ -724,8 +724,8 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
         x = [m.Param(value=v) for v in xi]
         y = [m.Param(value=v) for v in yi]
 
-        c_pop  = m.covariance(x, y, ddof=0, name='cov_pop')
-        c_samp = m.covariance(x, y, ddof=1, name='cov_samp')
+        c_pop  = m.cov(x, y, ddof=0, name='cov_pop')
+        c_samp = m.cov(x, y, ddof=1, name='cov_samp')
 
         m.solve(disp=False)
 
@@ -745,7 +745,7 @@ Pre-built objects are common model constructs that facilitate data analysis, reg
 
         X = [[m.Param(value=v) for v in r] for r in [r1, r2, r3]]
 
-        C = m.covariance(X, ddof=1, name='C')
+        C = m.cov(X, ddof=1, name='C')
 
         m.solve(disp=False)
 
