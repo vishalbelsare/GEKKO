@@ -2357,6 +2357,12 @@ class GEKKO(object):
 
         if timing == True:
             t = time.time()
+        self._sanitize_results_json()
+        if timing == True:
+            print('load results', time.time() - t)
+
+        if timing == True:
+            t = time.time()
         self.load_results()
         if timing == True:
             print('load results', time.time() - t)
@@ -2441,6 +2447,25 @@ class GEKKO(object):
         for f in d:
             if f.endswith('.t0') or f.endswith('.dxdt'):
                 os.remove(os.path.join(self._path,f))
+                
+    # check for +Inf / -Inf and replace with NaN
+    def _sanitize_results_json(self):
+        """Replace non-JSON Inf tokens with NaN in results.json so json.load succeeds."""
+        import os
+        path = os.path.join(self._path, 'results.json')
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                s = f.read()
+            # Replace +Inf, -Inf, and Inf (without letters around them) with NaN
+            # so that json.load can parse and values become float('nan') in Python.
+            s2 = re.sub(r'(?<![A-Za-z0-9_])\+?Inf(?![A-Za-z0-9_])', 'NaN', s)
+            s2 = re.sub(r'(?<![A-Za-z0-9_])-Inf(?![A-Za-z0-9_])', 'NaN', s2)
+            if s2 != s:
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(s2)
+        except FileNotFoundError:
+            # If results.json isn't there, let upstream logic handle error reporting
+            pass
 
     # Functions
     #  abs(x) absolute value |x|
@@ -2511,5 +2536,6 @@ class GEKKO(object):
             from .gk_gui import GK_GUI
             self.gui = GK_GUI(self._path)
             self.gui.display()
+
 
 
