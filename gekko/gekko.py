@@ -808,6 +808,115 @@ class GEKKO(object):
         self._connections.append(z.name + ' = ' + bspline_name+'.z')
         return
 
+    ## covariance
+    def cov(self, x, y=None, ddof=1, name=None):
+        """
+        Covariance (scalar or matrix) built with GEKKO equations.
+
+        Usage:
+          c  = m.cov(x, y, ddof=1)           # scalar covariance
+          C  = m.cov(X, ddof=1)              # covariance matrix from list of vectors
+
+        Inputs:
+          x: 1D vector (list/tuple/np.ndarray) OR 2D collection of vectors (list of vectors / 2D ndarray)
+          y: optional 1D vector (same length as x when x is 1D)
+          ddof: delta degrees of freedom (0 for population, 1 for sample). Must satisfy 0 <= ddof < N.
+          name: optional base name for output variable(s)
+
+        Returns:
+          If y is provided: GEKKO Var (scalar covariance)
+          If y is None and x is 2D: list-of-lists of GEKKO Vars (covariance matrix)
+        """
+
+        def _is_vector(obj):
+            return isinstance(obj, (list, tuple, np.ndarray))
+
+        def _to_list(obj):
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return list(obj)
+
+        def _wrap_numeric(v):
+            # allow python numeric scalars inside vectors
+            if isinstance(v, (int, float, np.integer, np.floating)):
+                return self.Param(value=float(v))
+            return v
+
+        def _ensure_1d_vector(vec, vec_name):
+            if not _is_vector(vec):
+                raise TypeError(f"{vec_name} must be a 1D vector (list/tuple/np.ndarray), got {type(vec)}")
+
+            vv = _to_list(vec)
+            if len(vv) == 0:
+                raise ValueError(f"{vec_name} must not be empty")
+
+            vv = [_wrap_numeric(v) for v in vv]
+
+            # reject obvious bad element types
+            for i, v in enumerate(vv):
+                if isinstance(v, (str, bytes, dict, set)):
+                    raise TypeError(f"{vec_name}[{i}] has unsupported type {type(v)}")
+            return vv
+
+        def _cov_1d(xv, yv, ddof_, out_name=None):
+            n = len(xv)
+
+            if not isinstance(ddof_, (int, np.integer)):
+                raise TypeError(f"ddof must be an integer, got {type(ddof_)}")
+            if ddof_ < 0 or ddof_ >= n:
+                raise ValueError(f"ddof must satisfy 0 <= ddof < N (N={n}), got ddof={ddof_}")
+
+            xm = self.sum(xv) / n
+            ym = self.sum(yv) / n
+
+            c = self.Var(name=out_name) if out_name else self.Var()
+
+            self.Equation(
+                c == (self.sum([(xv[i] - xm) * (yv[i] - ym) for i in range(n)])) / (n - ddof_)
+            )
+            return c
+
+        # ---- scalar covariance: x and y are 1D vectors ----
+        if y is not None:
+            xv = _ensure_1d_vector(x, "x")
+            yv = _ensure_1d_vector(y, "y")
+            if len(xv) != len(yv):
+                raise ValueError(f"x and y length mismatch: len(x)={len(xv)} vs len(y)={len(yv)}")
+
+            return _cov_1d(xv, yv, ddof, out_name=name)
+
+        # ---- covariance matrix: x is a list of vectors ----
+        X = x
+        if not _is_vector(X):
+            raise TypeError(f"x must be a 2D collection (list of vectors) when y is None, got {type(X)}")
+
+        Xl = _to_list(X)
+        if len(Xl) == 0:
+            raise ValueError("x must not be empty")
+
+        if not _is_vector(Xl[0]):
+            raise TypeError(
+                "For covariance matrix, x must be a list/tuple/2D array of vectors, e.g. [x1, x2, ...]"
+            )
+
+        vecs = [_ensure_1d_vector(v, f"x[{k}]") for k, v in enumerate(Xl)]
+        nobs = len(vecs[0])
+        for k, v in enumerate(vecs[1:], start=1):
+            if len(v) != nobs:
+                raise ValueError(
+                    f"All vectors in x must have the same length. x[0] has {nobs} but x[{k}] has {len(v)}"
+                )
+
+        p = len(vecs)
+        C = [[None] * p for _ in range(p)]
+        for i in range(p):
+            for j in range(p):
+                out_name = f"{name}_{i}_{j}" if name else None
+                C[i][j] = _cov_1d(vecs[i], vecs[j], ddof, out_name=out_name)
+
+        return C
+
+
     ## cubic Spline
     def cspline(self, x,y,x_data,y_data,bound_x=False):
         """Generate a 1d cubic spline with continuous first and seconds derivatives
@@ -2402,4 +2511,5 @@ class GEKKO(object):
             from .gk_gui import GK_GUI
             self.gui = GK_GUI(self._path)
             self.gui.display()
+
 
