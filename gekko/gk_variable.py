@@ -26,6 +26,10 @@ variable_options = {'SV':{'inputs':SV_input_options, 'outputs':SV_output_options
                     None:{'inputs':Var_input_options,'outputs':Var_output_options,'inout':Var_inout_options}}"""
 from .properties import variable_options as options
 
+class GK_Derivative(GK_Operators):
+    def __call__(self):
+        return self
+
 class GKVariable(GK_Operators):
     """Represents a parameter in a model"""
     counter = 0
@@ -69,8 +73,9 @@ class GKVariable(GK_Operators):
         # now allow options to be sent to the server
         self._initialized = True
 
+    @property
     def dt(self):
-        return GK_Operators('$' + self.name)
+        return GK_Derivative('$' + self.name)
 
     def __repr__(self):
         return str(self.value)
