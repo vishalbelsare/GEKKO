@@ -118,9 +118,11 @@ Model Functions
 
 .. py:classmethod:: dt()
 
-    Differential equations are specified by differentiating a variable with the `dt()` method. For example, velocity `v` is the derivative of position `x`::
+    Differential equations are specified by differentiating a variable with the `dt()` method or `dt` property. For example, velocity `v` is the derivative of position `x`::
 
-        m.Equation( v == x.dt() )
+        m.Equation( v == x.dt() )  # derivative (dx/dt) with parenthesis
+        m.Equation( v == x.dt )    # derivative (dx/dt) without parenthesis also okay
+
 
     Discretization is determined by the model `time` attribute. For example, `m.time = [0,1,2,3]` will discretize all equations and variable at the 4 points specified. Time or space discretization is available with Gekko, but not both. If the model contains a partial differential equation, the discretization in the other dimensions is performed with Gekko array operations as shown in the `hyperbolic and parabolic PDE Gekko examples <https://apmonitor.com/do/index.php/Main/PartialDifferentialEquations>`_.
 
