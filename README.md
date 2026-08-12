@@ -68,5 +68,5 @@ When the system of equations does not converge, APMonitor produces a convergence
 
 > Beal, L.D.R., Hill, D., Martin, R.A., and Hedengren, J. D., [GEKKO Optimization Suite](https://www.mdpi.com/2227-9717/6/8/106), Processes, Volume 6, Number 8, 2018, doi: 10.3390/pr6080106. [Article (Open Access)](https://www.mdpi.com/2227-9717/6/8/106)
 
-[![Star History Chart](https://api.star-history.com/svg?repos=BYU-PRISM/GEKKO&type=Date)](https://star-history.com/#BYU-PRISM/GEKKO&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=BYU-PRISM/GEKKO&type=Date)](https://star-history.dera.page/#BYU-PRISM/GEKKO&Date)
 
