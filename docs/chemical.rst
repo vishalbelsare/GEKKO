@@ -490,7 +490,7 @@ Flowsheet Objects
     This implementation splits the single equation into two equations
     The second equation is necessary to avoid the numerical integration.
     The equations are posed in an open equation form.  The integral time
-     constant is multiplied through to avoid potential divide by zero.
+    constant is multiplied through to avoid potential divide by zero.
     This form may have an advantage over placing the term taui in with the
     integral equation for cases where taui becomes very small.
 
