@@ -1,977 +1,778 @@
 .. _ml:
 
 Machine Learning
-==========================
+================
 
-   Gekko specializes in optimization, dynamic simulation, and control. The ML module
-   in GEKKO interfaces compatible machine learning
-   algorithms into the optimization suite to be used for data-based
-   optimization. Trained models from `scikit-learn`, `gpflow`, `nonconformist`, and `tensorflow` are imported into Gekko for 
-   design optimization, model predictive control, and physics-informed hybrid modeling.
-   
-.. toctree::
-	:maxdepth: 10
+.. py:module:: gekko.ML
 
+The :mod:`gekko.ML` module converts selected, already-fitted machine
+learning regressors into GEKKO expressions. A converted prediction can be
+used as an objective, a constraint, an intermediate expression, or part of
+a dynamic model.
 
-Machine Learning Interface models
-------------------------------
+GEKKO does not train these estimators and does not call arbitrary Python
+prediction functions while a solver is evaluating a model. Instead, an ML
+interface extracts the fitted parameters and rebuilds the prediction with
+GEKKO operators. Train and validate the estimator with its native library
+first, then create the GEKKO representation.
 
-   These functions allows interfaces of various models into Gekko. They can be found in the ML subpackage of gekko, imported like so:
-   
-   .. container:: cell code
+Typical applications include data-driven design optimization, hybrid
+first-principles/data-driven modeling, model predictive control, and
+uncertainty-aware optimization.
 
-   .. code:: python
-
-      from gekko import ML
-
-.. py:class:: Model = ML.Gekko_GPR(model,Gekko_Model,modelType='sklearn',fixedKernel=True)
-
-   Convert a gaussian process model from `sklearn`
-   into the Gekko package.
-
-   `model`: The first argument is the trained gaussian model, either from
-   `sklearn` GaussianProcessRegressor or a model from `gpflow`. Custom
-   kernels are not implemented, but all kernels and combinations of kernel in `sklearn` 
-   are allowed.
-
-   `Gekko_Model`: Gekko model (created by `GEKKO()`) that is appended with the new GPR model.
-
-   `modeltype`: sklearn indicates that the model
-   is from scikit-learn, otherwise from gpflow. If it is not sklearn, 
-   it convert from gpflow to sklearn.
-
-   `fixedKernel`: conversion from gpflow
-   to sklearn. If it is set to `True`, the kernel hyperparameters are
-   set to fixed; otherwise, `False` allows the hyperparameters to be
-   changed during training.
-
-.. py:class:: Model = ML.Gekko_SVR(model,Gekko_Model)
-
-   Imports an SVR model into Gekko.
-
-   `model`: Model must be a variant
-   of sklearn `svm.SVR()` or `svm.NuSVR()`.
-
-   `Gekko_Model`: Gekko model (created by `GEKKO()`) that is appended with the new SVR model.
-
-.. py:class:: Model = ML.Gekko_NN_SKlearn(model,minMaxArray,Gekko_Model)
-
-   Import an sklearn Neural Network into Gekko.
-
-   `model`: model trained with the MLPRegressor function from sklearn.
-
-   `minMaxArray`: min-max array for scaling created by the
-   custom min max scaler. This is necessary as neural networks often use
-   a scaled dataset.
-
-   `Gekko_Model`: Gekko model (created by `GEKKO()`) that is appended with the new NN model.
-
-.. py:class:: Model = ML.Gekko_LinearRegression(model,Gekko_Model)
-
-   Import a trained linear regression model from sklearn.
-
-   `model`: trained model from sklearn as a
-   Ridge Regression or Linear Regression model.
-
-   `Gekko_Model`: Gekko model (created by `GEKKO()`) that is appended with the new Linear Regression model.
-
-.. py:class:: Model = ML.Gekko_NN_TF(model,Gekko_Model)
-
-   Import a Tensorflow and Keras Neural Network into Gekko.
-   A customized loss function must be used during training to calculate
-   uncertainty.
-
-   `model`: trained model from the TensorFlow.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-.. py:class:: Model = ML.Gekko_DecisionTree(model,gekkoModel,ifo=2,eps=1e-3)
-
-   Import a sklearn decision tree model (sklearn.tree.DecisionTreeRegressor) into Gekko. Tree-based Gekko models use if2 and if3 functions,
-   defaulting the solver to APOPT. These functions may be inaccurate, so it may be good to test different 'ifo'/'eps' parameters to achieve desired accuracy.
-   When predicting with tree models, pass in the argument 'return_proba' to return the probability of the selected class, or
-   'return_conds' to validate which tree leaf is active for the Gekko prediction.
-
-   `model`: trained model from sklearn.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-   `ifo`: The 'if' Gekko function to use. ifo=2 uses GEKKO.if2(), ifo3 uses GEKKO.if3().
-
-   `eps`: An error term to add to the conditional logic to encourage the solver failing on tree conditional statements.
-
-
-.. py:class:: Model = ML.Gekko_RandomForest(model,gekkoModel,ifo=2,eps=1e-3)
-
-   Import a sklearn Random Forest model (sklearn.ensemble.RandomForestRegressor) into Gekko. For tree-based ensemble methods, too many base_estimators or
-   excessively deep trees may cause the solver to stall or fail to converge. Tree-based Gekko models use if2 and if3 functions,
-   defaulting the solver to APOPT. These functions may be inaccurate, so it may be good to test different 'ifo'/'eps' parameters to achieve desired accuracy.
-   When predicting with tree models, pass in the argument 'return_proba' to return the probability of the selected class, or
-   'return_conds' to validate which tree leaf is active for the Gekko prediction.
-
-   `model`: trained model from sklearn.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-   `ifo`: The 'if' Gekko function to use. ifo=2 uses GEKKO.if2(), ifo3 uses GEKKO.if3().
-
-   `eps`: An error term to add to the conditional logic to encourage the solver failing on tree conditional statements.
-
-.. py:class:: Model = ML.Gekko_GradientBooster(model,gekkoModel,ifo=2,eps=1e-3)
-
-   Import a sklearn Gradient Boosting Regressor model (sklearn.ensemble.GradientBoostingRegressor) into Gekko. For tree-based ensemble methods, too many base_estimators or
-   excessively deep trees may cause the solver to stall or fail to converge. Tree-based Gekko models use if2 and if3 functions,
-   defaulting the solver to APOPT. These functions may be inaccurate, so it may be good to test different 'ifo'/'eps' parameters to achieve desired accuracy.
-   When predicting with tree models, pass in the argument 'return_proba' to return the probability of the selected class, or
-   'return_conds' to validate which tree leaf is active for the Gekko prediction.
-
-   `model`: trained model from sklearn.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-   `ifo`: The 'if' Gekko function to use. ifo=2 uses GEKKO.if2(), ifo3 uses GEKKO.if3().
-
-   `eps`: An error term to add to the conditional logic to encourage the solver failing on tree conditional statements.
-
-   .. py:class:: Model = ML.Gekko_LinearTree(model,gekkoModel,ifo=2,eps=1e-3)
-
-   Import a linear tree regressor model from the linear-tree package into Gekko. Tree-based Gekko models use if2 and if3 functions,
-   defaulting the solver to APOPT. These functions may be inaccurate, so it may be good to test different 'ifo'/'eps' parameters to achieve desired accuracy.
-   When predicting with tree models, pass in the argument 'return_proba' to return the probability of the selected class, or
-   'return_conds' to validate which tree leaf is active for the Gekko prediction.
-
-   `model`: trained model from sklearn.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-   `ifo`: The 'if' Gekko function to use. ifo=2 uses GEKKO.if2(), ifo3 uses GEKKO.if3().
-
-   `eps`: An error term to add to the conditional logic to encourage the solver failing on tree conditional statements.
-
-.. py:class:: Model = ML.Boootstrap(models,Gekko_Model)
-
-   Perform an ensemble/bootstrap calculation method.
-
-   `models`: an array of models including GPR, SVR, and/or sklearn-NN models.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-.. py:class:: Model = ML.Conformist(model,Gekko_Model,u)
-
-   Conformal prediction wrapper for the previous listed
-   machine learning models.
-
-   `model`: trained model from sklearn.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-   `u`: The uncertainty interval provided by split conformal prediction. For conformalized ensembles, a custom version of the Bootstrap() interface is needed.
-
-.. py:class:: Model = ML.Delta(model,Gekko_Model,X,s)
-
-   Delta uncertainty wrapper for interfaced models. For machine learning models, a least squares model is used as surrogate for uncertainty quantification.
-
-  `model`: trained model from sklearn.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-  `X`: The design matrix for a least squares model / surrogate model.
-
-  `s` The approximation of the model error, or root mean square error.
-  
-.. py:classmethod:: prediction = Model.predict(xi,return_std=True):
-
-   For any model class built by the above functions, the function predict is called to generate a prediction. Some models may have multi-output (like neural networks) or additional
-   return statements.
-
-   `xi`: input array. It must be the same shape as the features used to train the model. 
-   It can be scalar/array quantities, or it can be gekko variables as the input can be gekko variables.
-   It allows optimization and control to be accessible to these models.
-
-   `return_std`: return standard deviation of prediction. For most models, this return 0 as this is not 
-   natively calculated. If the model is a gaussian model or is wrapped in one of the wrappers, 
-   then it provides an uncertainty. Some methods may increase runtime of the process, especially 
-   if the training set is large for the model.
-
-.. py:class:: model = Gekko_Scaled_Model(gmodel,scaler_x=None,scaler_y=None)
-
-   This interface wraps any gekko interface-model with scalers from sklearn. A scaler can be provided for the input and/or output. 
-   Sklearn's MinMaxScaler and StandardScaler are currently supported.
-
-   `gmodel`: a ML model (listed above) already interfaced into Gekko.
-
-   `Gekko_Model`: Gekko model solver object (created by `GEKKO()`).
-
-   `scaler_x`: sklearn scaler object for the input features.
-
-   `scaler_y`: sklearn scaler object for output features.
-
-Example problem
+Installation
 ------------
 
-   The example problem is a simple case study for the
-   integration of Machine Learning models into Gekko. Noise is added to
-   the data to represent measurement uncertainty and create a necessity
-   for fitting a regression model to the data.
-
-.. container:: cell code
-
-   .. code:: python
-
-      import numpy as np
-      import matplotlib.pyplot as plt
-
-      #Source function to generate data
-      def f(x):
-          return np.cos(2*np.pi*x)
-
-      #represent noise from a data sample
-      N = 350
-      xl = np.linspace(0,1.2,N)
-      noise = np.random.normal(0,.3,N)
-      y_measured = f(xl) + noise
-
-      plt.plot(xl,f(xl),label='source function')
-      plt.plot(xl,y_measured,'.',label='measured points')
-      plt.legend()
-      plt.show()
-
-   .. container:: output display_data
-
-.. image:: /ML_Gekko_pics/fig1.png
-   :width: 60%
-   :align: center
-   
-   
-
-Gekko's optimization functionality is used to find a minimum of this function.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      m = GEKKO()
-      x = m.Var(0,lb=0,ub=1)
-      y = m.Intermediate(m.cos(x*2*np.pi)) #function is used here
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solve Time:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -1.0
-         x: 0.5
-         Gekko Solve Time: 0.0078999999996 s
-
-   If the original source function is unknown, but the data is
-   available, data can be used to train machine learning models and then
-   these trained models can be used to optimize the required function.
-   In this case, the models are being used as the objective function,
-   but they can be used as constraint functions as well. Currently,
-   Gaussian Process Regression, Support Vector Machines, and Artificial
-   Neural Networks from sklearn can be interfaced and integrated into
-   Gekko. Below is a basic training script for each of the three models.
-
-.. container:: cell code
-
-   .. code:: python
-
-      #Import the ML interface functions
-      from gekko.ML import Gekko_GPR,Gekko_SVR,Gekko_NN_SKlearn
-      from gekko.ML import Gekko_NN_TF,Gekko_LinearRegression
-      from gekko.ML import Bootstrap,Conformist,CustomMinMaxGekkoScaler
-      import pandas as pd
-      from sklearn.model_selection import train_test_split
-
-      #Training the Data and split it
-      data = pd.DataFrame(np.array([xl,y_measured]).T,columns=['x','y'])
-      features = ['x']
-      label = ['y']
-      
-      train,test = train_test_split(data,test_size=0.2,shuffle=True)
-
-      #Training the models
-      import sklearn.gaussian_process as gp
-      from sklearn.neural_network import MLPRegressor
-      from sklearn import svm
-      from sklearn.metrics import r2_score
-      import tensorflow as tf
-
-      #GPR
-      k = gp.kernels.RBF() * gp.kernels.ConstantKernel() + gp.kernels.WhiteKernel()
-      gpr = gp.GaussianProcessRegressor(kernel=k,\
-                                  n_restarts_optimizer=10,\
-                                  alpha=0.1,\
-                                  normalize_y=True)
-      gpr.fit(train[features],train[label])
-      r2 = gpr.score(test[features],test[label])
-      print('gpr r2:',r2)
-
-      #SVR
-      svr = svm.SVR()
-      svr.fit(train[features],np.ravel(train[label]))
-      r2 = svr.score(test[features],np.ravel(test[label]))
-      print('svr r2:',r2)
-
-      #NNSK
-      s = CustomMinMaxGekkoScaler(data,features,label)
-      ds = s.scaledData()
-      mma = s.minMaxValues()
-
-      trains,tests = train_test_split(ds,test_size=0.2,shuffle=True)
-      hl= [25,15]
-      mlp = MLPRegressor(hidden_layer_sizes= hl, activation='relu', 
-                         solver='adam', batch_size = 32,
-                         learning_rate = 'adaptive',learning_rate_init = .0005,
-                         tol=1e-6 ,n_iter_no_change = 200,
-                         max_iter=12000)
-      mlp.fit(trains[features],np.ravel(trains[label]))
-      r2 = mlp.score(tests[features],np.ravel(tests[label]))
-      print('nnSK r2:',r2)
-
-      #NNTF
-      s = CustomMinMaxGekkoScaler(data,features,label)
-      ds = s.scaledData()
-      mma = s.minMaxValues()
-
-      trains,tests = train_test_split(ds,test_size=0.2,shuffle=True)
-      def loss(y_true, y_pred):
-          mu = y_pred[:, :1] # first output neuron
-          log_sig = y_pred[:, 1:] # second output neuron
-          sig = tf.exp(log_sig) # undo the log
-
-          return tf.reduce_mean(2*log_sig + ((y_true-mu)/sig)**2)
-
-      model = tf.keras.Sequential([
-          tf.keras.layers.Dense(25, activation='relu'),
-          tf.keras.layers.Dense(20, activation='relu'),
-          #tf.keras.layers.Dense(20, activation='relu'),
-          #tf.keras.layers.Dense(8, activation='relu'),
-          tf.keras.layers.Dense(1) # Output = (μ, ln(σ)) if using loss fxn
-      ])
-
-      model.compile(loss='mse')
-      model.fit(trains[features],np.ravel(trains[label]),
-                batch_size = 10,epochs = 450,verbose = 0)
-      pred = model(np.ravel(tests[features]))[:,0]
-      r2 = r2_score(pred,np.ravel(tests[label]))
-      print('nnTF r2:',r2)
-
-   .. container:: output stream stdout
-
-      ::
-
-         gpr r2: 0.838216347698638
-         svr r2: 0.8410099238165618
-         nnSK r2: 0.8642445702764527
-         nnTF r2: 0.8136166599386209
-
-
-   Models are plotted against the source function and data.
-
-.. container:: cell code
-
-   .. code:: python
-
-      plt.figure(figsize=(8,8))
-      plt.plot(xl,f(xl),label='source function')
-      plt.plot(xl,y_measured,'.',label='measured points')
-      gpr_pred,gpr_u = gpr.predict(data[features],return_std = True)
-      gpr_u *= 1.645
-      plt.errorbar(xl,gpr_pred,fmt='--',yerr=gpr_u,label='gpr')
-      plt.plot(xl,svr.predict(data[features]),'--',label='svr')
-      plt.plot(xl,s.unscale_y(mlp.predict(ds[features])),'--',label='nn_sk')
-      plt.plot(xl,s.unscale_y(model.predict(np.ravel(ds[features]))[:,0]),'--',label='nn_tf')
-      plt.legend()
-
-
-.. image:: /ML_Gekko_pics/fig2.png
-   :width: 60%
-   :align: center
-   
-
-   Now that the models have been trained, they can be used for
-   optimization. The same optimization code used for the source function 
-   is used for these models, with the exception that the y variable
-   is now calculated from these machine learning models.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      m = GEKKO()
-      x = m.Var(0,lb=0,ub=1)
-      y = Gekko_GPR(gpr,m).predict(x) #function is used here
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -1.0091446783
-         x: 0.50302287841
-         Gekko Solvetime: 0.0609 s
-
-
-   Gekko_GPR interfaces gpr from `sklearn` or `gpflow` into Gekko. Gaussian
-   Processes allows for the calculation of prediction intervals in the
-   model. While this isn't shown here, for more complicated problems
-   this uncertainty can be used with optimization and decision making
-   when these models are used. All kernels implemented in `sklearn`,
-   anisotropic and isotropic, are working in Gekko, however, some may
-   converge to an infeasibility during solving, so careful kernel
-   consideration is key. These kernels can be combined together, and a
-   custom kernel can be used if a corresponding function is implemented
-   in both `sklearn` and `Gekko`.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      m = GEKKO()
-      x = m.Var(0,lb=0,ub=1)
-      y = Gekko_SVR(svr,m).predict(x)
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -0.98631267957
-         x: 0.49993325357
-         Gekko Solvetime: 0.015799999999 s
-
-   Gekko_SVR interfaces `svr` from `sklearn` into Gekko. Support vector
-   machines are more simple than GPR, but do not produce the same
-   uncertainty calculations. All 4 kernels from sklearn are implemented
-   and compatible with Gekko.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      m = GEKKO()
-      x = m.Var(0,lb=0,ub=1)
-      y = Gekko_NN_SKlearn(mlp,mma,m).predict([x])
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -1.1718634886
-         x: 0.47205029204
-         Gekko Solvetime: 0.1068 s
-
-   Gekko_NN_SKlearn implements the ANN from `sklearn`, specifically the
-   one created by MLPRegressor. Since scaling is necessary for neural
-   networks, a custom min max scaler was replicated so that the
-   interface could automatically scale and unscale data for prediction.
-   Any layer combination or activation function from sklearn is
-   applicable in Gekko.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      x = m.Var(.0,lb = 0,ub=1)
-      y = Gekko_NN_TF(model,mma,m,n_output = 1).predict([x])
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -1.1491270614
-         x: 0.49209592754
-         Gekko Solvetime: 0.2622 s
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      x = m.Var(.0,lb = 0,ub=1)
-      y = Gekko_NN_TF(model,mma,m,n_output = 1).predict([x])
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -1.1491270614
-         x: 0.49209592754
-         Gekko Solvetime: 0.2622 s
-
-Bootstrap Uncertainty Quantification
+GEKKO and scikit-learn are sufficient for the introductory examples:
+
+.. code-block:: console
+
+   python -m pip install gekko scikit-learn scipy
+
+TensorFlow, GPflow, and linear-tree are optional and are needed only for
+the interfaces that use those packages.
+
+Quick start: optimize a Gaussian process
+----------------------------------------
+
+The following example trains a scikit-learn Gaussian process on noisy data,
+converts the fitted model to a GEKKO expression, and minimizes the predicted
+response over ``0 <= x <= 1``.
+
+.. code-block:: python
+
+   import numpy as np
+   from gekko import GEKKO
+   from gekko.ML import Gekko_GPR
+   from sklearn.gaussian_process import GaussianProcessRegressor
+   from sklearn.gaussian_process.kernels import ConstantKernel, RBF, WhiteKernel
+
+   # Reproducible training data
+   rng = np.random.default_rng(7)
+   X = np.linspace(0.0, 1.0, 41).reshape(-1, 1)
+   y = np.cos(2.0 * np.pi * X[:, 0]) + rng.normal(0.0, 0.08, X.shape[0])
+
+   # Train and validate the model outside GEKKO
+   kernel = ConstantKernel(1.0) * RBF(0.2) + WhiteKernel(0.01)
+   gpr = GaussianProcessRegressor(
+       kernel=kernel,
+       alpha=1.0e-6,
+       normalize_y=True,
+       random_state=7,
+   )
+   gpr.fit(X, y)
+
+   # Rebuild the fitted prediction as a GEKKO expression
+   m = GEKKO(remote=False)
+   x = m.Var(value=0.5, lb=0.0, ub=1.0)
+   # Object arrays avoid a NumPy 2 copy=False issue in the current wrapper.
+   x_features = np.asarray([x], dtype=object)
+   gpr_gekko = Gekko_GPR(gpr, m)
+   y_hat = gpr_gekko.predict(x_features)
+
+   m.Minimize(y_hat)
+   m.solve(disp=False)
+
+   print(f"x = {x.value[0]:.6f}")
+   print(f"predicted minimum = {y_hat.value[0]:.6f}")
+
+The optimized result depends on the fitted model, not directly on the
+unknown source function. Keep decision-variable bounds within the region
+covered by the training data unless extrapolation has been validated.
+
+Recommended workflow
+--------------------
+
+#. Prepare the data and establish a train/validation/test procedure.
+#. Fit the estimator with scikit-learn, TensorFlow, GPflow, or linear-tree.
+#. Check predictive accuracy and residual behavior before optimization.
+#. Create a ``GEKKO`` model and bounded decision variables.
+#. Construct the matching :mod:`gekko.ML` interface with the fitted estimator
+   and the same GEKKO model.
+#. Call ``predict`` with features in the exact order used during training.
+#. Compare native-library and GEKKO predictions at several fixed points.
+#. Use the GEKKO prediction in an objective, equation, or inequality.
+#. Solve and confirm that the solution remains inside a validated domain.
+
+.. warning::
+
+   Optimization can exploit small surrogate-model errors. A model with good
+   average test accuracy may still produce a poor optimizer near a boundary,
+   in a sparse region, or outside the training domain. Validate the optimized
+   point with the original model and, when possible, with the physical system
+   or a higher-fidelity model.
+
+Available interfaces
+--------------------
+
+.. list-table:: Fitted-model interfaces
+   :header-rows: 1
+   :widths: 25 28 47
+
+   * - GEKKO interface
+     - Source estimator
+     - Main notes
+   * - :class:`Gekko_GPR`
+     - scikit-learn ``GaussianProcessRegressor`` or selected GPflow models
+     - Supports a GEKKO prediction and an optional predictive standard
+       deviation.
+   * - :class:`Gekko_SVR`
+     - scikit-learn ``SVR`` or ``NuSVR``
+     - Supports ``rbf``, ``poly``, ``linear``, and ``sigmoid`` kernels.
+   * - :class:`Gekko_NN_Sklearn`
+     - scikit-learn ``MLPRegressor``
+     - Returns one GEKKO expression per output. Scaling is not automatic.
+   * - :class:`Gekko_NN_TF`
+     - TensorFlow/Keras Dense networks
+     - Intended for Dense-layer models; ``predict`` returns the first output.
+   * - :class:`Gekko_LinearRegression`
+     - scikit-learn ``LinearRegression`` or ``Ridge``
+     - Feature engineering must be reproduced with GEKKO expressions.
+   * - :class:`Gekko_DecisionTree`
+     - scikit-learn ``DecisionTreeRegressor``
+     - Represents branch logic with ``GEKKO.if2`` or ``GEKKO.if3``.
+   * - :class:`Gekko_RandomForest`
+     - scikit-learn ``RandomForestRegressor``
+     - Averages converted decision trees; model size grows with the forest.
+   * - :class:`Gekko_GradientBooster`
+     - scikit-learn ``GradientBoostingRegressor``
+     - Converts the initial estimate and each fitted regression tree.
+   * - :class:`Gekko_LinearTree`
+     - ``lineartree.LinearTreeRegressor``
+     - Uses tree branch logic with a linear model in each leaf.
+
+The module also includes :class:`Bootstrap`, :class:`Conformist`, and
+:class:`Delta` wrappers for selected uncertainty calculations, plus
+:class:`Gekko_Scaled_Model` for scikit-learn scalers.
+
+API reference
+-------------
+
+Gaussian process regression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. py:class:: Gekko_GPR(model, m, modelType='sklearn', fixedKernel=True)
+
+   Convert a fitted Gaussian process regression model to GEKKO expressions.
+
+   :param model: A fitted scikit-learn ``GaussianProcessRegressor``. When
+      ``modelType`` is not ``'sklearn'``, the object is treated as a GPflow
+      model and is converted through a temporary scikit-learn model.
+   :param m: The ``GEKKO`` model that owns all generated
+      expressions.
+   :param str modelType: Use ``'sklearn'`` for a scikit-learn model or
+      ``'gpflow'`` for the supported GPflow conversion path.
+   :param bool fixedKernel: During GPflow conversion, fix the converted kernel
+      hyperparameters when ``True``. This argument does not affect a supplied
+      scikit-learn model.
+
+   Supported scikit-learn kernels include ``RBF``, ``Matern`` with
+   ``nu`` equal to ``0.5``, ``1.5``, or ``2.5``, ``ConstantKernel``,
+   ``WhiteKernel``, ``RationalQuadratic``, ``ExpSineSquared``, and
+   ``DotProduct``. Sum, product, and exponentiation compositions are parsed
+   recursively. Custom kernels are not supported unless a corresponding
+   GEKKO implementation is added.
+
+   The GPflow path reconstructs and fits a scikit-learn Gaussian process from
+   the GPflow data and selected kernel parameters. Compare its predictions
+   with the original GPflow model before optimization.
+
+   .. py:method:: predict(xi, return_std=False)
+
+      Build the prediction at ``xi``. Pass a one-dimensional NumPy object
+      array, such as ``np.asarray([x1, x2], dtype=object)``, to make feature
+      order explicit and to avoid the NumPy 2 ``copy=False`` compatibility
+      issue described in :ref:`ml-numpy-copy-error`.
+
+      When ``return_std=True``, return ``(prediction, standard_deviation)`` as
+      GEKKO expressions. The calculation increases model size with the number
+      of Gaussian-process training samples.
+
+Support vector regression
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. py:class:: Gekko_SVR(model, m)
+
+   Convert a fitted scikit-learn ``SVR`` or ``NuSVR`` model.
+
+   :param model: A fitted ``sklearn.svm.SVR`` or ``sklearn.svm.NuSVR``
+      estimator.
+   :param m: The owning ``GEKKO`` model.
+
+   Supported kernel names are ``'rbf'``, ``'poly'``, ``'linear'``, and
+   ``'sigmoid'``. Callable and precomputed kernels are not converted.
+
+   .. py:method:: predict(xi, return_std=False)
+
+      Return the GEKKO prediction. Pass ``xi`` as a one-dimensional NumPy
+      object array with the training feature order. With ``return_std=True``,
+      the second result
+      is the estimator's ``epsilon`` attribute. It is a constant margin, not
+      a statistical standard deviation or calibrated prediction interval; for
+      ``NuSVR`` this value is typically zero.
+
+Scikit-learn neural network
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. py:class:: Gekko_NN_Sklearn(model, m)
+
+   Convert a fitted scikit-learn ``MLPRegressor``.
+
+   :param model: A fitted ``sklearn.neural_network.MLPRegressor``.
+   :param m: The owning ``GEKKO`` model.
+
+   The wrapper copies the fitted weight matrices and bias vectors and rebuilds
+   each dense layer. It does not copy a preprocessing pipeline and does not
+   scale inputs or outputs automatically.
+
+   The current implementation correctly maps the scikit-learn ``identity``,
+   ``tanh``, and ``relu`` activation names. Avoid ``activation='logistic'``
+   until the wrapper maps scikit-learn's ``'logistic'`` name to its sigmoid
+   expression. A ReLU network introduces piecewise logic and can be more
+   difficult to optimize than a smooth ``tanh`` network.
+
+   .. py:method:: predict(x)
+
+      Return a list of GEKKO expressions, one per model output. For a
+      single-output regressor, select the scalar expression with ``[0]``.
+
+   .. py:method:: __call__(x)
+
+      Equivalent to :meth:`predict`.
+
+TensorFlow/Keras neural network
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. py:class:: Gekko_NN_TF(model, m)
+
+   Convert the Dense layers of a fitted TensorFlow/Keras model.
+
+   :param model: A fitted Keras model whose non-input, non-dropout layers have
+      Dense-style weights, biases, and activation metadata.
+   :param m: The owning ``GEKKO`` model.
+
+   Input and Dropout layers are skipped. Convolutional, recurrent, attention,
+   normalization, and arbitrary custom layers are not converted by this
+   interface. Validate every converted output against ``model.predict``.
+
+   .. py:method:: forward(x)
+
+      Return a list containing all output-layer expressions.
+
+   .. py:method:: predict(x, return_std=False)
+
+      Return only the first output expression. The current implementation
+      accepts ``return_std`` for API compatibility but does not calculate or
+      return an uncertainty value.
+
+Linear regression
+~~~~~~~~~~~~~~~~~
+
+.. py:class:: Gekko_LinearRegression(model, m)
+
+   Convert a fitted scikit-learn linear or ridge regression model.
+
+   :param model: A fitted estimator with ``coef_`` and ``intercept_``
+      attributes, such as ``LinearRegression`` or ``Ridge``.
+   :param m: The owning ``GEKKO`` model.
+
+   The current implementation expects a two-dimensional target during fitting,
+   for example ``model.fit(X, y.reshape(-1, 1))``. Polynomial and other derived
+   features must be reconstructed explicitly with GEKKO operators before
+   calling ``predict``.
+
+   .. py:method:: predict(xi, return_std=False)
+
+      Return the linear prediction. Pass ``xi`` as a one-dimensional NumPy
+      object array with the engineered features in training order. With
+      ``return_std=True``, the second result
+      is currently the constant value zero; use :class:`Delta` or another
+      calibrated method when an interval is required.
+
+Scaling wrapper
+~~~~~~~~~~~~~~~
+
+.. py:class:: Gekko_Scaled_Model(gmodel, scaler_x=None, scaler_y=None)
+
+   Wrap a converted GEKKO model with fitted scikit-learn input and/or output
+   scalers.
+
+   :param gmodel: An already-converted GEKKO ML interface.
+   :param scaler_x: A fitted ``StandardScaler`` or ``MinMaxScaler`` for input
+      features.
+   :param scaler_y: A fitted ``StandardScaler`` or ``MinMaxScaler`` for output
+      values.
+
+   .. py:method:: predict(X, return_std=False)
+
+      Scale the inputs, evaluate the converted model, and transform the result
+      back to the original output units. When the wrapped model supports
+      ``return_std``, the uncertainty is rescaled without applying an output
+      offset.
+
+.. note::
+
+   This wrapper is experimental in the current implementation. Explicit
+   scaling, as shown in :ref:`ml-neural-network-scaling`, is easier to inspect
+   and should be preferred until native and GEKKO predictions have been
+   compared for the complete preprocessing path.
+
+Tree-based regressors
+~~~~~~~~~~~~~~~~~~~~~
+
+Tree interfaces translate each split into GEKKO conditional expressions.
+They are most practical for shallow trees. Deep trees and large ensembles can
+create many conditional expressions and can substantially increase solve time.
+
+``ifo=2`` selects ``GEKKO.if2`` and ``ifo=3`` selects ``GEKKO.if3``. The
+``eps`` value shifts branch tests slightly to reduce ambiguity at an exact
+split threshold. Check predictions on both sides of every relevant split when
+changing either option.
+
+.. py:class:: Gekko_DecisionTree(model, m, ifo=2, eps=1e-3)
+
+   Convert a fitted scikit-learn ``DecisionTreeRegressor`` with a scalar
+   output.
+
+   :param model: A fitted ``DecisionTreeRegressor``.
+   :param m: The owning ``GEKKO`` model.
+   :param int ifo: Conditional formulation selector, either ``2`` or ``3``.
+   :param float eps: Offset applied at branch thresholds.
+
+   .. py:method:: predict(input, return_proba=False, return_conds=False)
+
+      Return the tree prediction. With ``return_conds=True``, also return the
+      list of leaf-activation expressions. With ``return_proba=True``, also
+      return the fraction of root training samples assigned to the active leaf.
+      This value is a leaf support fraction, not a classification probability.
+      If both optional flags are true, ``return_conds`` takes precedence.
+
+.. py:class:: Gekko_RandomForest(model, m, ifo=2, eps=1e-3)
+
+   Convert a fitted scikit-learn ``RandomForestRegressor`` by converting and
+   averaging its component trees.
+
+   .. py:method:: predict(input)
+
+      Return the mean of the converted tree predictions.
+
+.. py:class:: Gekko_GradientBooster(model, m, ifo=2, eps=1e-3)
+
+   Convert a fitted scikit-learn ``GradientBoostingRegressor``. This interface
+   does not apply to histogram-based gradient boosting estimators.
+
+   .. py:method:: predict(input)
+
+      Return the initial estimate plus the learning-rate-weighted tree
+      predictions.
+
+.. py:class:: Gekko_LinearTree(model, m, ifo=2, eps=0)
+
+   Convert a fitted ``lineartree.LinearTreeRegressor``. Each leaf contributes
+   a local linear model when its branch conditions are active.
+
+   .. py:method:: predict(input, return_conds=False)
+
+      Return the prediction. With ``return_conds=True``, also return the list
+      of leaf-activation expressions.
+
+.. note::
+
+   The random-forest, gradient-booster, scaled-model, and linear-tree wrappers
+   should be treated as experimental. Compare their GEKKO predictions with the
+   original estimators over a representative grid before using them in an
+   optimization problem.
+
+.. _ml-uncertainty:
+
+Uncertainty wrappers
+~~~~~~~~~~~~~~~~~~~~
+
+The meaning of the second value returned by ``return_std=True`` is
+interface-specific. It is not always a statistical standard deviation.
+
+.. list-table:: Meaning of ``return_std``
+   :header-rows: 1
+   :widths: 28 72
+
+   * - Interface
+     - Second returned value
+   * - :class:`Gekko_GPR`
+     - Gaussian-process predictive standard deviation expression.
+   * - :class:`Gekko_SVR`
+     - Constant SVR epsilon margin; not a calibrated standard deviation.
+   * - :class:`Gekko_LinearRegression`
+     - Zero placeholder in the current implementation.
+   * - :class:`Bootstrap`
+     - Sample standard deviation across converted model predictions.
+   * - :class:`Conformist`
+     - User-supplied constant uncertainty half-width.
+   * - :class:`Delta`
+     - Student-t-based confidence or prediction half-width.
+
+.. py:class:: Bootstrap(models, m)
+
+   Combine predictions from two or more already-converted GEKKO models.
+
+   :param models: A sequence of converted interfaces that all belong to the
+      same GEKKO model and implement ``predict(xi)``.
+   :param m: The owning ``GEKKO`` model.
+
+   .. py:method:: predict(xi, return_std=False)
+
+      Return the ensemble mean. With ``return_std=True``, also return the sample
+      standard deviation across model predictions. At least two models are
+      required for the standard-deviation calculation.
+
+.. py:class:: Conformist(model, m, u)
+
+   Attach a constant uncertainty margin to an already-converted model.
+
+   :param model: A converted GEKKO model interface, not the original
+      scikit-learn estimator.
+   :param m: The owning ``GEKKO`` model.
+   :param float u: A calibrated uncertainty half-width in output units.
+
+   This class does not fit or calibrate a conformal predictor. Compute ``u``
+   externally with a calibration set or a conformal-prediction package, then
+   pass the result to this wrapper.
+
+   .. py:method:: predict(xi, return_std=False)
+
+      Return the base prediction. With ``return_std=True``, also return the
+      constant margin ``u``.
+
+.. py:class:: Delta(model, m, X, s)
+
+   Add a first-order, least-squares-style uncertainty calculation to an
+   already-converted model.
+
+   :param model: A converted GEKKO model interface.
+   :param m: The owning ``GEKKO`` model.
+   :param X: The numeric design matrix used in the interval calculation.
+   :param float s: Residual scale, commonly an estimated root-mean-square error.
+
+   .. py:method:: predict(xi, return_std=False, conf=0.9, PI=0)
+
+      Return the base prediction. With ``return_std=True``, also return a
+      Student-t-based half-width. ``PI=0`` omits the additional prediction-error
+      term; ``PI=1`` includes it. The feature vector ``xi`` and design matrix
+      ``X`` must use the same feature construction, including any intercept
+      column supplied by the user.
+
+API changes from older examples
 -------------------------------
 
-   For some cases where uncertainty intervals are necessary, resampling
-   can be used to train multiple models, where the mean and standard
-   deviation is then used as prediction and uncertainty. Models can even
-   be combined in this resampling method.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from sklearn.metrics import r2_score
-      Train,test = train_test_split(data,test_size=0.2,shuffle=True)
-      models = []
-      for i in range(40):
-          train,extra = train_test_split(Train,test_size=0.5,shuffle=True)
-          svr = svm.SVR()
-          svr.fit(train[features],np.ravel(train[label]))
-          models.append(svr)
-          
-      pred = []
-      std = []
-      for i in range(len(data)):
-          predicted = []
-          for j in range(len(models)):
-              predicted.append(models[j].predict(data[features].values[i].reshape(-1,1)))
-          pred.append(np.mean(predicted))
-          std.append(1.645*np.std(predicted))
-              
-      r2 = r2_score(pred,data[label])
-      print('ensemble r2:',r2)
-
-      plt.figure(figsize=(8,8))
-      plt.plot(xl,f(xl),label='source function')
-      plt.plot(xl,y_measured,'.',label='measured points')
-      plt.errorbar(xl,pred,fmt='--',label='40-bootstrap SVR with 90% prediction interval',yerr=std)
-      plt.legend()
-
-   .. container:: output stream stdout
-
-      ::
-
-         ensemble r2: 0.8063013376330483
-
-
-.. image:: /ML_Gekko_pics/fig3.png
-   :width: 60%
-   :align: center
-   
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      m = GEKKO()
-      x = m.Var(0,lb=0,ub=1)
-      y = Bootstrap(models,m).predict(x) #function is used here
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -1.0201166145
-         x: 0.49964423862
-         Gekko Solvetime: 0.186 s
-
-Linear Regression
----------------------------------
-
-   Linear regression is also interfaced in Gekko. This works for
-   Sklearn's RidgeRegression and LinearRegression functions. For
-   nonlinear functions, linear regression can be extended to
-   polynomial/multivariate regression with feature engineering. It is
-   possible to calculate the uncertainty of prediction for linear
-   regression, so the training set and RMSE is also provided to the
-   Interface function.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from sklearn.metrics import mean_squared_error
-
-      newdata = data
-      newdata['x^2'] = data['x']**2
-      newdata['x^3'] = data['x']**3
-      newdata['sinx'] = np.sin(data['x'])
-      newfeatures = ['x','x^2','x^3','sinx']
-
-      from sklearn.linear_model import Ridge
-
-      train,test = train_test_split(newdata,test_size=0.2,shuffle=True)
-
-      lr = Ridge(alpha=0)
-      lr.fit(train[newfeatures],train[label])
-      lr.score(test[newfeatures],test[label])
-      pred = lr.predict(data[newfeatures])
-      RMSE = np.sqrt(mean_squared_error(pred,data[label]))
-      Xtrain = train[newfeatures].values
-
-      #predict with the Linear model and uncertainties
-      import scipy.stats as ss
-      def predict(model,xi,Xtrain,RMSE,conf=0.9):
-          pred = model.predict(xi.reshape(1,-1))[0][0]
-          G = np.linalg.inv(np.dot(Xtrain.T,Xtrain))
-          n = len(Xtrain)
-          p = len(G)
-          t = ss.t.isf(q=(1 - conf) / 2, df=n-p)
-          uncertainty = RMSE*t*np.sqrt(np.dot(np.dot(xi.T,G),xi))
-          return pred,uncertainty
-
-      pred = []
-      std = []
-      for i in range(len(newdata)):
-          p,s = predict(lr,newdata[newfeatures].values[i],Xtrain,RMSE)
-          pred.append(p)
-          std.append(s)
-
-      plt.figure(figsize=(8,8))
-      plt.plot(xl,f(xl),label='source function')
-      plt.plot(xl,y_measured,'.',label='measured points')
-      plt.errorbar(xl,pred,fmt='--',yerr=std,label='modified linear regression')
-      plt.legend()
-
-.. image:: /ML_Gekko_pics/fig4.png
-   :width: 60%
-   :align: center
-   
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      m = GEKKO()
-      x = m.Var(.1,lb=0,ub=1)
-      #needs to be modified due to feature engineering
-      x1 = x
-      x2 = x**2
-      x3 = x**3
-      x4 = m.sin(x)
-      y = Gekko_LinearRegression(lr,m).predict([x1,x2,x3,x4]) #function is used here
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -0.99222938638
-         x: 0.50971895084
-         Gekko Solvetime: 0.013500000001 s
-
-Conformal Prediction Uncertainty Quantification
-----------------------------------------------------
-
-   Prediction intervals can also be calculated with a distance-metric
-   based method called non-conformist prediction. This requires an
-   additional datasplit of the training set into a training set and
-   calibration set. This calibration set is then used to calibrate the
-   model and give a prediction interval that represents the desired
-   quantile. This method works with every model and produces a constant
-   uncertainty rather than a variable one. The model is first trained
-   with the nonconformist library before it is interfaced with Gekko. It
-   typically results in a higher variance but can be more consistent
-   than other methods.
-
-.. container:: cell code
-
-   .. code:: python
-
-      from nonconformist.base import RegressorAdapter
-      from nonconformist.icp import IcpRegressor
-      from nonconformist.nc import RegressorNc, RegressorNormalizer
-      from nonconformist.nc import InverseProbabilityErrFunc
-      from nonconformist.nc import MarginErrFunc,AbsErrorErrFunc,SignErrorErrFunc
-      from sklearn.neural_network import MLPRegressor
-      import sklearn.gaussian_process as gp
-      from sklearn import svm
-
-      train,test = train_test_split(data,test_size=0.2,shuffle=True)
-      train,calibrate = train_test_split(train,test_size=0.5,shuffle=True)
-
-
-      k = gp.kernels.RBF() * gp.kernels.ConstantKernel() + gp.kernels.WhiteKernel()
-      gpr = gp.GaussianProcessRegressor(kernel=k,\
-                                  n_restarts_optimizer=10,\
-                                  alpha=0.1,\
-                                  normalize_y=True)
-
-
-      mod = RegressorAdapter(gpr)
-
-      nc = RegressorNc(mod,AbsErrorErrFunc()) #assign an error function
-      icp = IcpRegressor(nc) #create the icp regressor
-      icp.fit(train[features],train[label].values.reshape(len(train)))
-      icp.calibrate(calibrate[features],calibrate[label].values.reshape(len(calibrate)))
-
-      all_prediction = icp.predict(data[features].values,significance=0.1)
-      pred = (all_prediction[:,0] + all_prediction[:,1])/2
-      margin = (abs(all_prediction[:,0] - all_prediction[:,1])/2)[0]
-      r2a = r2_score(pred,data[label])
-      print('r2:',r2a)
-      print('90% prediction margin:',margin)
-
-   .. container:: output stream stdout
-
-      ::
-
-         r2: 0.8134537732195808
-         90% prediction margin: 0.527352056347252
-
-.. container:: cell code
-
-   .. code:: python
-
-      plt.figure(figsize=(8,8))
-      plt.plot(xl,f(xl),label='source function')
-      plt.plot(xl,y_measured,'.',label='measured points')
-      plt.errorbar(xl,pred,fmt='--',yerr=margin,label='Conformist GPR')
-      plt.legend()
-
-.. image:: /ML_Gekko_pics/fig5.png
-   :width: 60%
-   :align: center
-   
-
-.. container:: cell code
-
-   .. code:: python
-
-      from gekko import GEKKO
-      m = GEKKO()
-      x = m.Var(.1,lb=0,ub=1)
-      #needs to be modified due to feature engineering
-      y = Conformist([icp.get_params()['nc_function__model'].get_params()['model'],margin],m).predict([x])
-      m.Obj(y)
-      m.solve(disp=False)
-      print('solution:',y.value[0])
-      print('x:',x.value[0])
-      print('Gekko Solvetime:',m.options.SOLVETIME,'s')
-
-   .. container:: output stream stdout
-
-      ::
-
-         solution: -0.95151964117
-         x: 0.51036497097
-         Gekko Solvetime: 0.023100000006 s
-
-   There are several methods of calculating prediction uncertainty for
-   the interfaced models. Uncertainty is calculated within Gaussian
-   Processes. Several models can be trained and used with resampling for
-   a prediction mean and variation. Linear regression can create
-   uncertainty through least squared equations. This same uncertainty method can be 
-   applied to other nonlinear regression methods with the Delta function. The nonconformist
-   library can generate an uncertainty margin as well. Different
-   variants of neural networks, specifically in Tensorflow, can produce
-   uncertainty based on the loss function.
-
-Control Applications
----------------------------------
-
-   These models can be used for a wide variety of applications in Gekko,
-   not just optimization. Here, a simple control problem is presented
-   where the xt function is replaced by a model. It generates nearly the
-   same result
-
-.. container:: cell code
-
-   .. code:: python
-
-      def control1(model=[],returns=False,plot=True):
-          global m
-
-          m = GEKKO() # initialize gekko
-          nt = 101
-          m.time = np.linspace(0,2,nt)
-          # Variables
-          x1 = m.Var(value=1)
-          x2 = m.Var(value=0)
-          u = m.Var(value=0,lb=-1,ub=1)
-          p = np.ones(nt) # mark final time point
-          p[-1] = 1.0
-          final = m.Param(value=p)
-          # Equations
-          m.Equation(x1.dt()==u)
-          if(model == []):
-              f = 0.5*x1**2
-          else:
-              if(model[0] == 'GPR'):
-                  f = Gekko_GPR(model[1],m).predict([x1])
-              elif(model[0] == 'SVR'):
-                  f = Gekko_SVR(model[1],m).predict([x1])
-              elif(model[0] == 'NNSK'):
-                  f = Gekko_NN_SKlearn(model[1],model[2],m).predict([x1])
-              elif(model[0] == 'NNTF'):
-                  f = Gekko_NN_TF(model[1],model[2],m,1).predict([x1])
-                  
-          m.Equation(x2.dt()==f)
-          m.Obj(x2*final) # Objective function
-          m.options.IMODE = 6 # optimal control mode
-          m.solve(disp=False) # solve
-          
-          if plot:
-              plt.figure(1) # plot results
-              plt.plot(m.time,x1.value,'k-',label=r'$x_1$')
-              plt.plot(m.time,x2.value,'b-',label=r'$x_2$')
-              plt.plot(m.time,u.value,'r--',label=r'$u$')
-              plt.legend(loc='best')
-              plt.xlabel('Time')
-              plt.ylabel('Value')
-              plt.show()
-          if returns:
-              return m.time,x1.value,x2.value,u.value
-
-      #Generate Training set
-      import numpy as np
-      import matplotlib.pyplot as plt
-
-      def f(x):
-          return 0.5*x**2
-
-      N = 200
-      xl = np.linspace(-2,2,N)
-      noise = np.random.normal(0,.1,N)
-      y_measured = f(xl) + noise
-
-      plt.plot(xl,f(xl),label='source function')
-      plt.plot(xl,y_measured,'.',label='measured points')
-
-.. image:: /ML_Gekko_pics/fig6.png
-   :width: 60%
-   :align: center
-   
-
-.. container:: cell code
-
-   .. code:: python
-
-      import pandas as pd
-      from sklearn.model_selection import train_test_split
-
-      data = pd.DataFrame(np.array([xl,y_measured]).T,columns=['x','y'])
-      features = ['x']
-      label = ['y']
-
-      train,test = train_test_split(data,test_size=0.2,shuffle=True)
-
-      import sklearn.gaussian_process as gp
-      from sklearn.neural_network import MLPRegressor
-      from sklearn import svm
-
-      #gpr
-      k = gp.kernels.RBF() * gp.kernels.ConstantKernel() + gp.kernels.WhiteKernel()
-      gpr = gp.GaussianProcessRegressor(kernel=k,\
-                                  n_restarts_optimizer=10,\
-                                  alpha=0.1,\
-                                  normalize_y=True)
-      gpr.fit(train[features],train[label])
-      r2 = gpr.score(test[features],test[label])
-      print('gpr r2:',r2)
-
-
-      #svr
-      svr = svm.SVR()
-      svr.fit(train[features],np.ravel(train[label]))
-      r2 = svr.score(test[features],np.ravel(test[label]))
-      print('svr r2:',r2)
-
-   .. container:: output stream stdout
-
-      ::
-
-         gpr r2: 0.9786408113248649
-         svr r2: 0.9731400906454939
-
-.. container:: cell code
-
-   .. code:: python
-
-      control1()
-
-.. image:: /ML_Gekko_pics/fig7.png
-   :width: 60%
-   :align: center
-   
-
-.. container:: cell code
-
-   .. code:: python
-
-      control1(["GPR",gpr])
-
-.. image:: /ML_Gekko_pics/fig8.png
-   :width: 60%
-   :align: center
-   
-
-.. container:: cell code
-
-   .. code:: python
-
-      control1(["SVR",svr])
-
-
-.. image:: /ML_Gekko_pics/fig9.png
-   :width: 60%
-   :align: center
-   
-
-Remarks
------------
-
-All of these functions import trained models and tools provided by other packages. The packages used for this extension to Gekko are:
-
-Scikit-learn: https://scikit-learn.org/stable/
-
-Tensorflow: https://www.tensorflow.org/
-
-GPflow: https://github.com/GPflow/GPflow
-
-Nonconformist: https://github.com/donlnz/nonconformist
-
-as well as other standard packages like Numpy, Pandas, and others.
-
-Authors of the Machine Learning package for Gekko are graduate research assistants 
-`LaGrande Gunnell <https://www.linkedin.com/in/lagrande-gunnell-715a2b194/>`_ and
-`Kyle Manwaring <https://www.linkedin.com/in/kyle-manwaring-1310a1177/>`_. Thanks to 
-`John Vienna <https://www.linkedin.com/in/john-vienna-66b7a3219/>`_ and 
-`Xiaonan Lu <https://www.linkedin.com/in/xiaonan-lu-55775280/>`_ of
-Pacific Northwest National Laboratory for providing technical direction and sponsorship of the work
-through a Department of Energy (DOE) grant.
+Older GEKKO notebooks and documentation may contain names and signatures that
+no longer match :mod:`gekko.ML`.
+
+* Use ``Gekko_NN_Sklearn(model, m)``, not
+  ``Gekko_NN_SKlearn(model, minMaxArray, m)``.
+* ``CustomMinMaxGekkoScaler`` is not part of the current module. Use a fitted
+  scikit-learn scaler and reproduce the transformation explicitly, or use the
+  experimental :class:`Gekko_Scaled_Model` wrapper.
+* Use ``Bootstrap`` with two ``o`` characters, not ``Boootstrap``.
+* Pass an already-converted model to ``Conformist(model, m, u)``. Do not pass a
+  list containing a native estimator and a margin.
+* The neural-network wrappers do not automatically return uncertainty from a
+  custom TensorFlow loss.
+* ``Gekko_DecisionTree.return_proba`` reports active-leaf support for a
+  regressor; it is not a selected-class probability.
+
+Examples
+--------
+
+.. _ml-neural-network-scaling:
+
+Explicit scaling for ``MLPRegressor``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Neural-network training often benefits from scaled inputs and outputs. Keep the
+preprocessing explicit so that the same formulas are visible in both training
+and optimization.
+
+.. code-block:: python
+
+   import numpy as np
+   from gekko import GEKKO
+   from gekko.ML import Gekko_NN_Sklearn
+   from sklearn.neural_network import MLPRegressor
+   from sklearn.preprocessing import StandardScaler
+
+   rng = np.random.default_rng(7)
+   X = np.linspace(0.0, 1.0, 80).reshape(-1, 1)
+   y = np.cos(2.0 * np.pi * X[:, 0]) + rng.normal(0.0, 0.05, X.shape[0])
+
+   x_scaler = StandardScaler().fit(X)
+   y_scaler = StandardScaler().fit(y.reshape(-1, 1))
+   X_scaled = x_scaler.transform(X)
+   y_scaled = y_scaler.transform(y.reshape(-1, 1)).ravel()
+
+   mlp = MLPRegressor(
+       hidden_layer_sizes=(20, 20),
+       activation="tanh",
+       max_iter=5000,
+       random_state=7,
+   )
+   mlp.fit(X_scaled, y_scaled)
+
+   m = GEKKO(remote=False)
+   x = m.Var(value=0.5, lb=0.0, ub=1.0)
+
+   # Repeat the fitted StandardScaler transformations with GEKKO expressions.
+   x_scaled_m = (x - x_scaler.mean_[0]) / x_scaler.scale_[0]
+   y_scaled_m = Gekko_NN_Sklearn(mlp, m).predict([x_scaled_m])[0]
+   y_hat = m.Intermediate(
+       y_scaled_m * y_scaler.scale_[0] + y_scaler.mean_[0]
+   )
+
+   m.Minimize(y_hat)
+   m.solve(disp=False)
+
+Bootstrap ensemble
+~~~~~~~~~~~~~~~~~~
+
+Train the native estimators first. After the GEKKO model is created, convert
+each estimator with the same ``m`` and pass those converted interfaces to
+:class:`Bootstrap`.
+
+.. code-block:: python
+
+   import numpy as np
+   from gekko import GEKKO
+   from gekko.ML import Bootstrap, Gekko_SVR
+   from sklearn.svm import SVR
+
+   rng = np.random.default_rng(7)
+   X = np.linspace(0.0, 1.0, 60).reshape(-1, 1)
+   y = np.cos(2.0 * np.pi * X[:, 0]) + rng.normal(0.0, 0.08, X.shape[0])
+
+   estimators = []
+   for _ in range(10):
+       sample = rng.integers(0, X.shape[0], X.shape[0])
+       estimator = SVR(C=10.0, epsilon=0.05, kernel="rbf")
+       estimator.fit(X[sample], y[sample])
+       estimators.append(estimator)
+
+   m = GEKKO(remote=False)
+   x = m.Var(value=0.5, lb=0.0, ub=1.0)
+   x_features = np.asarray([x], dtype=object)
+   converted = [Gekko_SVR(estimator, m) for estimator in estimators]
+   ensemble = Bootstrap(converted, m)
+   mean, std = ensemble.predict(x_features, return_std=True)
+
+   # Example conservative objective for minimization.
+   m.Minimize(mean + 1.645 * std)
+   m.solve(disp=False)
+
+Constant conformal margin
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :class:`Conformist` wrapper stores a margin; calibration remains an
+external step. The example below computes a split-conformal absolute-residual
+quantile and attaches it to a converted Gaussian process.
+
+.. code-block:: python
+
+   import numpy as np
+   from gekko import GEKKO
+   from gekko.ML import Conformist, Gekko_GPR
+   from sklearn.gaussian_process import GaussianProcessRegressor
+   from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+   from sklearn.model_selection import train_test_split
+
+   rng = np.random.default_rng(7)
+   X = np.linspace(0.0, 1.0, 80).reshape(-1, 1)
+   y = np.cos(2.0 * np.pi * X[:, 0]) + rng.normal(0.0, 0.08, X.shape[0])
+   X_train, X_cal, y_train, y_cal = train_test_split(
+       X, y, test_size=0.25, random_state=7
+   )
+
+   gpr = GaussianProcessRegressor(
+       kernel=RBF(0.2) + WhiteKernel(0.01),
+       normalize_y=True,
+       random_state=7,
+   )
+   gpr.fit(X_train, y_train)
+
+   residual = np.abs(y_cal - gpr.predict(X_cal))
+   alpha = 0.10
+   level = min(1.0, np.ceil((len(residual) + 1) * (1 - alpha)) / len(residual))
+   margin = float(np.quantile(residual, level, method="higher"))
+
+   m = GEKKO(remote=False)
+   x = m.Var(value=0.5, lb=0.0, ub=1.0)
+   x_features = np.asarray([x], dtype=object)
+   base = Gekko_GPR(gpr, m)
+   calibrated = Conformist(base, m, margin)
+   mean, half_width = calibrated.predict(x_features, return_std=True)
+
+   # The constant margin affects a robust constraint, although it would not
+   # change the minimizer if it were merely added to an objective.
+   m.Equation(mean + half_width <= -0.5)
+   m.Minimize(x)
+   m.solve(disp=False)
+
+Tree-model validation
+~~~~~~~~~~~~~~~~~~~~~
+
+A tree surrogate should be checked especially near split thresholds.
+
+.. code-block:: python
+
+   import numpy as np
+   from gekko import GEKKO
+   from gekko.ML import Gekko_DecisionTree
+   from sklearn.tree import DecisionTreeRegressor
+
+   X = np.linspace(0.0, 1.0, 80).reshape(-1, 1)
+   y = np.cos(2.0 * np.pi * X[:, 0])
+   tree = DecisionTreeRegressor(max_depth=4, random_state=7).fit(X, y)
+
+   m = GEKKO(remote=False)
+   x = m.Var(value=0.5, lb=0.0, ub=1.0)
+   x_features = np.asarray([x], dtype=object)
+   tree_gekko = Gekko_DecisionTree(tree, m, ifo=2, eps=1.0e-4)
+   y_hat, leaf_conditions = tree_gekko.predict(
+       x_features, return_conds=True
+   )
+
+   m.Minimize(y_hat)
+   m.solve(disp=False)
+
+   # At a fixed test point, compare tree.predict([[x_test]]) with the
+   # corresponding GEKKO prediction before relying on the optimized result.
+
+Dynamic optimization with a learned model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A converted model can appear in a differential equation. This example learns
+``f(x1) = 0.5*x1**2`` and uses the learned function in a small dynamic
+optimization problem.
+
+.. code-block:: python
+
+   import numpy as np
+   from gekko import GEKKO
+   from gekko.ML import Gekko_GPR
+   from sklearn.gaussian_process import GaussianProcessRegressor
+   from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+
+   # Train the static surrogate.
+   X = np.linspace(-2.0, 2.0, 31).reshape(-1, 1)
+   y = 0.5 * X[:, 0] ** 2
+   gpr = GaussianProcessRegressor(
+       kernel=RBF(0.7) + WhiteKernel(1.0e-8),
+       normalize_y=True,
+       random_state=7,
+   ).fit(X, y)
+
+   # Dynamic optimization model.
+   m = GEKKO(remote=False)
+   nt = 81
+   m.time = np.linspace(0.0, 2.0, nt)
+
+   x1 = m.Var(value=1.0)
+   x2 = m.Var(value=0.0)
+   u = m.MV(value=0.0, lb=-1.0, ub=1.0)
+   u.STATUS = 1
+
+   final_marker = np.zeros(nt)
+   final_marker[-1] = 1.0
+   final = m.Param(value=final_marker)
+
+   state_features = np.asarray([x1], dtype=object)
+   learned_rate = Gekko_GPR(gpr, m).predict(state_features)
+   m.Equation(x1.dt() == u)
+   m.Equation(x2.dt() == learned_rate)
+   m.Minimize(final * x2)
+
+   m.options.IMODE = 6
+   m.solve(disp=False)
+
+Troubleshooting
+---------------
+
+Prediction does not match the source estimator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Check feature order, units, scaling, and output shape first. Evaluate both
+models at fixed numeric points before adding an objective. For neural networks,
+confirm that every activation is supported and remember that
+:class:`Gekko_NN_Sklearn` returns a list.
+
+.. _ml-numpy-copy-error:
+
+``ValueError: Unable to avoid copy while creating an array``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The current ``Gekko_GPR``, ``Gekko_SVR``, and
+``Gekko_LinearRegression`` implementations call ``np.array(...,
+copy=False)``. NumPy 2 raises ``ValueError`` when an input list or scalar
+would require a copy. Until the implementation is changed to
+``np.atleast_1d(np.asarray(xi, dtype=object))``, pass an existing object array
+to ``predict``:
+
+.. code-block:: python
+
+   features = np.asarray([x1, x2], dtype=object)
+   prediction = converted_model.predict(features)
+
+``NameError: name 'm' is not defined``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some experimental wrappers in the current source use a module-level ``m`` in
+parts of ``predict`` instead of the model stored by the instance. The source
+implementation should use ``self.m`` consistently in
+:class:`Gekko_Scaled_Model`, :class:`Gekko_RandomForest`,
+:class:`Gekko_GradientBooster`, and :class:`Gekko_LinearTree`.
+
+Tree model is slow or difficult to solve
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Reduce tree depth, prune the number of estimators, and validate a single
+:class:`Gekko_DecisionTree` before converting an ensemble. Compare ``ifo=2``
+and ``ifo=3`` formulations and tune ``eps`` only after checking predictions
+near split thresholds.
+
+Gaussian process creates a large GEKKO model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each prediction contains terms associated with the Gaussian-process training
+samples. Reduce or summarize the training set, use a sparse modeling strategy,
+or select a different surrogate when solve time or generated model size becomes
+excessive.
+
+Unexpected uncertainty result
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Review :ref:`ml-uncertainty` and verify the units. The API name
+``return_std`` is shared across interfaces, but the second value may be an
+epsilon margin, a fixed half-width, or another interval measure.
+
+Related packages
+----------------
+
+The ML interfaces build on models and utilities from the following projects:
+
+* `scikit-learn <https://scikit-learn.org/stable/>`_
+* `TensorFlow <https://www.tensorflow.org/>`_
+* `GPflow <https://www.gpflow.org/>`_
+* `linear-tree <https://github.com/cerlymarco/linear-tree>`_
+* `SciPy <https://scipy.org/>`_
+
+A conformal-prediction library may be used to calculate a calibration margin,
+but :class:`Conformist` only stores and returns the supplied margin; it does
+not depend on a particular calibration package.
+
+Acknowledgements
+----------------
+
+The GEKKO machine-learning package was developed by graduate research
+assistants `LaGrande Gunnell
+<https://www.linkedin.com/in/lagrande-gunnell-715a2b194/>`_ and `Kyle
+Manwaring <https://www.linkedin.com/in/kyle-manwaring-1310a1177/>`_. Thanks
+to `John Vienna <https://www.linkedin.com/in/john-vienna-66b7a3219/>`_ and
+`Xiaonan Lu <https://www.linkedin.com/in/xiaonan-lu-55775280/>`_ of Pacific
+Northwest National Laboratory for technical direction and sponsorship through
+a U.S. Department of Energy grant.
